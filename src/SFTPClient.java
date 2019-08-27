@@ -18,9 +18,12 @@ class SFTPClient implements Runnable {
         DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        
+
         modifiedSentence = inFromServer.readLine();
-        System.out.println("FROM SERVER: " + modifiedSentence);
+        if (modifiedSentence.charAt(0) == '-'){
+            clientSocket.close();
+            return;
+        }
 
         while(true){
             sentence = inFromUser.readLine();

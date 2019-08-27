@@ -28,6 +28,7 @@ class SFTPServer implements Runnable {
         }
         else{
             outToClient.writeBytes("-MIT-XX Out to Lunch\n");
+            return;
         }
 
         while(serverOn) {
