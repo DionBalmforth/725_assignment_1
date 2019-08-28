@@ -13,6 +13,7 @@ class SFTPServer implements Runnable {
     private boolean accountAccepted = false;
     private String typeMode;
     private String currentDir = System.getProperty("user.dir");
+    private String checkDir = "";
 
     private void SFTPServer() throws Exception
     {
@@ -54,6 +55,9 @@ class SFTPServer implements Runnable {
                     break;
                 case "LIST":
                     returningMessage = LIST(messageSplit);
+                    break;
+                case "CDIR":
+                    returningMessage = CDIR(messageSplit[1]);
                     break;
                 default:
                     System.out.println("unrecognised command");
@@ -153,6 +157,7 @@ class SFTPServer implements Runnable {
         if (!loggedInCheck()){
             return buildMessage("-user not logged in");
         }
+
         String output = "";
         // check if path is ok
         if (list.length == 3){
@@ -163,10 +168,10 @@ class SFTPServer implements Runnable {
         }
 
         //return the files in path
-        File test = new File(currentDir);
+        File test = new File(checkDir);
 
         File[] files = test.listFiles();
-        output = "+" + currentDir + "\r\n";
+        output = "+" + checkDir + "\r\n";
         for (File file: files){
             output = output + file.getName();
 
@@ -184,6 +189,22 @@ class SFTPServer implements Runnable {
     }
 
     //CDIR command
+    private String CDIR(String path){
+        String output = "";
+        if (!loggedInCheck()){
+            return buildMessage("-user not logged in");
+        }
+
+        output = checkPath(path);
+        if (output != ""){
+            return buildMessage("-Can't connect to directory because: " + output);
+        }
+        else{
+            currentDir = checkDir;
+            return buildMessage("!Changed working dir to " + currentDir);
+        }
+
+    }
 
     //KILL command
 
@@ -198,13 +219,13 @@ class SFTPServer implements Runnable {
     private String checkPath(String newPath){
         try {
             File test = new File(newPath);
-            String output = "";
 
             File[] files = test.listFiles();
-            for (File file: files){
-                output = output + file + "\r\n";
+            if (files[0].isDirectory()){
+                checkDir = newPath;
             }
         } catch (Exception e) {
+            checkDir = currentDir;
             return "-" + e.toString();
         }
 
