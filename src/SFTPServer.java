@@ -415,7 +415,6 @@ class SFTPServer implements Runnable {
     }
 
     //SEND command
-    //https://www.programiz.com/java-programming/examples/convert-file-byte-array
     private String SEND(){
         if (!loggedInCheck()){
             return buildMessage("-user not logged in");
@@ -476,7 +475,6 @@ class SFTPServer implements Runnable {
         }
     }
 
-    //https://www.geeksforgeeks.org/different-ways-reading-text-file-java/
     //read user info from file
     private boolean readUserFromFile(String user) throws Exception
     {
