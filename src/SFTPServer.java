@@ -1,6 +1,10 @@
 //import stuff
 import java.io.*;
 import java.net.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Arrays;
 
 //SFTP class
 class SFTPServer implements Runnable {
@@ -16,6 +20,7 @@ class SFTPServer implements Runnable {
     private String checkDir = "";
     private String sendingFilename = "";
     private String oldFilename = "";
+    private OutputStream outputStream;
 
     private void SFTPServer() throws Exception
     {
@@ -28,7 +33,7 @@ class SFTPServer implements Runnable {
 
         BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
         PrintWriter outToClient = new PrintWriter(connectionSocket.getOutputStream(), true);
-        OutputStream outputStream = connectionSocket.getOutputStream();
+        outputStream = connectionSocket.getOutputStream();
 
         if (serverOn){
             outToClient.println(buildMessage("+UOA-725 SFTP Service"));
@@ -74,13 +79,16 @@ class SFTPServer implements Runnable {
                 case "RETR":
                     returningMessage = RETR(messageSplit[1]);
                     break;
+                case "SEND":
+                    returningMessage = SEND();
+                    break;
                 case "DONE":
                     returningMessage = DONE();
                     break;
                 default:
                     returningMessage = buildMessage("unrecognised command");
             }
-            //System.out.println(returningMessage);
+
             outToClient.println(returningMessage);
             if (messageSplit[0].equals("DONE") && returningMessage.equals("+\0")){
                 return;
@@ -323,6 +331,29 @@ class SFTPServer implements Runnable {
     }
 
     //SEND command
+    //https://www.programiz.com/java-programming/examples/convert-file-byte-array
+    private String SEND(){
+        if (!loggedInCheck()){
+            return buildMessage("-user not logged in");
+        }
+
+        if (sendingFilename == ""){
+            return buildMessage("-RETR not called");
+        }
+
+        File file = new File(currentDir + "/" + sendingFilename);
+        if(file.exists()){
+            try {
+                byte[] encoded = Files.readAllBytes(file.toPath());
+                outputStream.write(encoded);
+            }
+            catch (IOException e) {
+                System.out.println("SEND failed: " + e.toString());
+            }
+        }
+
+        return buildMessage("");
+    }
 
     //STOR command
 

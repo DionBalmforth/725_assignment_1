@@ -1,12 +1,16 @@
 //imports
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
 
 //build class
 class SFTPClient implements Runnable {
     private String socketName = "localhost";
     private int port = 6789;
     private boolean connOpen = true;
+    private int fileSize = 0;
+    private String filename = "";
+    private String currentDir = System.getProperty("user.dir");
 
     private void SFTPClient() throws Exception {
 
@@ -44,11 +48,22 @@ class SFTPClient implements Runnable {
                 }
             }
             modifiedSentence = sb.toString();
+            modifiedSentence = modifiedSentence.substring(0,modifiedSentence.length()-1);
             sb.setLength(0);
+
+            cmd = sentence.split(" ");
+            if (cmd[0].equals("RETR") && !modifiedSentence.substring(0, 1).equals("-")){
+                fileSize = Integer.valueOf(modifiedSentence);
+                filename = cmd[1];
+            }
+
+            if (sentence.equals("SEND")){
+                File file = new File(currentDir + "/SEND/" + filename);
+                file.createNewFile();
+            }
 
             System.out.println("FROM SERVER: " + modifiedSentence);
 
-            cmd = sentence.split(" ");
             if (cmd[0].equals("DONE") && modifiedSentence.substring(0, 1).equals("+")){
                 connOpen = false;
             }
