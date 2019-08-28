@@ -59,6 +59,9 @@ class SFTPServer implements Runnable {
                 case "CDIR":
                     returningMessage = CDIR(messageSplit[1]);
                     break;
+                case "KILL":
+                    returningMessage = KILL(messageSplit[1]);
+                    break;
                 default:
                     System.out.println("unrecognised command");
             }
@@ -207,6 +210,23 @@ class SFTPServer implements Runnable {
     }
 
     //KILL command
+    private String KILL(String filename){
+        if (!loggedInCheck()){
+            return buildMessage("-user not logged in");
+        }
+
+        try{
+            File file = new File(currentDir + "/" + filename);
+            if(file.exists()){
+                file.delete();
+                return buildMessage("+" + filename + " deleted");
+            }
+        }
+        catch (Exception e){
+            return buildMessage("-" + e.toString());
+        }
+        return buildMessage("-file not in current directory");
+    }
 
     //NAME command
 
@@ -226,7 +246,7 @@ class SFTPServer implements Runnable {
             }
         } catch (Exception e) {
             checkDir = currentDir;
-            return "-" + e.toString();
+            return e.toString();
         }
 
         return "";
