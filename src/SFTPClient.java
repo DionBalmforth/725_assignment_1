@@ -6,11 +6,13 @@ import java.net.*;
 class SFTPClient implements Runnable {
     private String socketName = "localhost";
     private int port = 6789;
+    private boolean connOpen = true;
 
     private void SFTPClient() throws Exception {
 
         String sentence;
         String modifiedSentence;
+        String[] cmd;
         int letter;
         StringBuilder sb = new StringBuilder();
 
@@ -27,7 +29,7 @@ class SFTPClient implements Runnable {
             return;
         }
 
-        while(true){
+        while(connOpen){
             sentence = inFromUser.readLine();
 
             outToServer.println(sentence + '\0');
@@ -45,8 +47,13 @@ class SFTPClient implements Runnable {
             sb.setLength(0);
 
             System.out.println("FROM SERVER: " + modifiedSentence);
+
+            cmd = sentence.split(" ");
+            if (cmd[0].equals("DONE") && modifiedSentence.substring(0, 1).equals("+")){
+                connOpen = false;
+            }
         }
-        //clientSocket.close();
+        clientSocket.close();
     }
 
     public void run() {
@@ -54,6 +61,7 @@ class SFTPClient implements Runnable {
         try{
             while(true){
                 SFTPClient();
+                System.out.println("Client connection closed");
             }
         }
         catch (Exception e){

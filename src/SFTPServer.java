@@ -17,6 +17,7 @@ class SFTPServer implements Runnable {
 
     private void SFTPServer() throws Exception
     {
+        //add some stuff for invalid params (length && if message "" say -invalid parameters) or somth
         String clientMessage;
         String returningMessage = "";
 
@@ -62,11 +63,17 @@ class SFTPServer implements Runnable {
                 case "KILL":
                     returningMessage = KILL(messageSplit[1]);
                     break;
+                case "DONE":
+                    returningMessage = DONE();
+                    break;
                 default:
                     System.out.println("unrecognised command");
             }
             //System.out.println(returningMessage);
             outToClient.println(returningMessage);
+            if (messageSplit[0].equals("DONE") && returningMessage.equals("+\0")){
+                return;
+            }
         }
     }
 
@@ -231,6 +238,9 @@ class SFTPServer implements Runnable {
     //NAME command
 
     //DONE command
+    private String DONE(){
+        return buildMessage("+");
+    }
 
     //RETR command
 
@@ -291,6 +301,7 @@ class SFTPServer implements Runnable {
         System.out.println("Setting up Server...\n");
         try{
             SFTPServer();
+            System.out.println("Server connection closed");
         }
         catch (Exception e){
             return;
