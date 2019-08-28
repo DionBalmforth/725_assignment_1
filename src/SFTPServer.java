@@ -14,6 +14,7 @@ class SFTPServer implements Runnable {
     private String typeMode;
     private String currentDir = System.getProperty("user.dir");
     private String checkDir = "";
+    private String sendingFilename = "";
     private String oldFilename = "";
 
     private void SFTPServer() throws Exception
@@ -69,6 +70,9 @@ class SFTPServer implements Runnable {
                     break;
                 case "TOBE":
                     returningMessage = TOBE(messageSplit[1]);
+                    break;
+                case "RETR":
+                    returningMessage = RETR(messageSplit[1]);
                     break;
                 case "DONE":
                     returningMessage = DONE();
@@ -298,9 +302,31 @@ class SFTPServer implements Runnable {
     }
 
     //RETR command
+    private String RETR(String filename){
+        if (!loggedInCheck()){
+            return buildMessage("-user not logged in");
+        }
+
+        try{
+            File file = new File(currentDir + "/" + filename);
+            if(file.exists()){
+                sendingFilename = filename;
+                return buildMessage(Integer.toString((int)file.length()));
+            }
+        }
+        catch (Exception e){
+            sendingFilename = "";
+            return buildMessage("-" + e.toString());
+        }
+        sendingFilename = "";
+        return buildMessage("-File doesn't exist");
+    }
+
+    //SEND command
 
     //STOR command
 
+    //Helper methods
     private String checkPath(String newPath){
         try {
             File test = new File(newPath);
