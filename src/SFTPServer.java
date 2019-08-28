@@ -26,6 +26,7 @@ class SFTPServer implements Runnable {
     {
         //initialize variables
         String clientMessage;
+        String clientCommand;
         String returningMessage = "";
 
         ServerSocket welcomeSocket = new ServerSocket(port);
@@ -46,42 +47,50 @@ class SFTPServer implements Runnable {
 
         while(serverOn) {
             //read clients message
-            clientMessage = inFromClient.readLine();
-            clientMessage = clientMessage.substring(0, clientMessage.length()-1);
-            String[] messageSplit = clientMessage.split(" ");
+            clientCommand = inFromClient.readLine();
+            clientCommand = clientCommand.substring(0, clientCommand.length()-1);
+            String[] messageSplit = clientCommand.split(" ");
+
+            //ensure the client sent the correct information otherwise replace with ""
+            if (messageSplit.length >= 2){
+                clientMessage = messageSplit[1];
+            }
+            else{
+                clientMessage = "";
+            }
 
             //route to command given
             switch(messageSplit[0])
             {
                 case "USER":
-                    returningMessage = USER(messageSplit[1]);
+                    returningMessage = USER(clientMessage);
                     break;
                 case "ACCT":
-                    returningMessage = ACCT(messageSplit[1]);
+                    returningMessage = ACCT(clientMessage);
                     break;
                 case "PASS":
-                    returningMessage = PASS(messageSplit[1]);
+                    returningMessage = PASS(clientMessage);
                     break;
                 case "TYPE":
-                    returningMessage = TYPE(messageSplit[1]);
+                    returningMessage = TYPE(clientMessage);
                     break;
                 case "LIST":
                     returningMessage = LIST(messageSplit);
                     break;
                 case "CDIR":
-                    returningMessage = CDIR(messageSplit[1]);
+                    returningMessage = CDIR(clientMessage);
                     break;
                 case "KILL":
-                    returningMessage = KILL(messageSplit[1]);
+                    returningMessage = KILL(clientMessage);
                     break;
                 case "NAME":
-                    returningMessage = NAME(messageSplit[1]);
+                    returningMessage = NAME(clientMessage);
                     break;
                 case "TOBE":
-                    returningMessage = TOBE(messageSplit[1]);
+                    returningMessage = TOBE(clientMessage);
                     break;
                 case "RETR":
-                    returningMessage = RETR(messageSplit[1]);
+                    returningMessage = RETR(clientMessage);
                     break;
                 case "SEND":
                     returningMessage = SEND();
@@ -104,6 +113,11 @@ class SFTPServer implements Runnable {
 
     //USER command
     private String USER(String user){
+        //send client error message
+        if (user.equals("")){
+            return buildMessage("-Invalid user-id, try again");
+        }
+
         //ensure user logged in
         if (loggedInCheck()){
             return buildMessage("!" + userInformation[0] + " logged in");
@@ -128,6 +142,11 @@ class SFTPServer implements Runnable {
 
     //ACCT command
     private String ACCT(String account){
+        //send client error message
+        if (account.equals("")){
+            return buildMessage("-Invalid account, try again");
+        }
+
         //loggin check
         if (loggedInCheck()){
             return buildMessage("! Account valid, logged-in");
@@ -151,6 +170,11 @@ class SFTPServer implements Runnable {
 
     //PASS command
     private String PASS(String password){
+        //send client error message
+        if (password.equals("")){
+            return buildMessage("-Wrong password, try again");
+        }
+
         //check client logged in
         if (loggedInCheck()){
             return buildMessage("!" + userInformation[0] + " logged in");
@@ -174,6 +198,12 @@ class SFTPServer implements Runnable {
 
     //TYPE command
     private String TYPE(String type){
+        //send client error message
+        if (type.equals("")){
+            return buildMessage("-Type not valid");
+        }
+
+        //ensure user is logged in
         if (loggedInCheck()){
             //store type given by user
             switch(type)
@@ -220,11 +250,10 @@ class SFTPServer implements Runnable {
         }
 
         //return the files in path
-        File file = new File(checkDir);
+        File holdDir = new File(checkDir);
 
-        File[] files = file.listFiles();
+        File[] files = holdDir.listFiles();
         output = "+" + checkDir + "\r\n";
-        System.out.println(checkDir);
         for (File file: files){
             output = output + file.getName();
 
@@ -244,6 +273,11 @@ class SFTPServer implements Runnable {
 
     //CDIR command
     private String CDIR(String path){
+        //send client error message
+        if (path.equals("")){
+            return buildMessage("-Can't connect to directory because no path given");
+        }
+
         String output = "";
         //check if client is logged in
         if (!loggedInCheck()){
@@ -264,6 +298,11 @@ class SFTPServer implements Runnable {
 
     //KILL command
     private String KILL(String filename){
+        //send client error message
+        if (filename.equals("")){
+            return buildMessage("-file not in current directory");
+        }
+
         //ensure user logged in
         if (!loggedInCheck()){
             return buildMessage("-user not logged in");
@@ -285,6 +324,11 @@ class SFTPServer implements Runnable {
 
     //NAME command
     private String NAME(String filename){
+        //send client error message
+        if (filename.equals("")){
+            return buildMessage("-file not given");
+        }
+
         if (!loggedInCheck()){
             return buildMessage("-user not logged in");
         }
@@ -307,6 +351,11 @@ class SFTPServer implements Runnable {
 
     //TOBE
     private String TOBE(String newFilename){
+        //send client error message
+        if (newFilename.equals("")){
+            return buildMessage("-file not in given");
+        }
+
         if (!loggedInCheck()){
             return buildMessage("-user not logged in");
         }
@@ -340,6 +389,11 @@ class SFTPServer implements Runnable {
 
     //RETR command
     private String RETR(String filename){
+        //send client error message
+        if (filename.equals("")){
+            return buildMessage("-File doesn't exist");
+        }
+
         if (!loggedInCheck()){
             return buildMessage("-user not logged in");
         }
@@ -387,7 +441,6 @@ class SFTPServer implements Runnable {
         return buildMessage("");
     }
 
-    //STOR command
 
     //Helper methods
     private String checkPath(String newPath){

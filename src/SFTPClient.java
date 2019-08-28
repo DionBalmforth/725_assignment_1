@@ -52,7 +52,7 @@ class SFTPClient implements Runnable {
                 }
             }
             //write server response
-            modifiedSentence = sb.toString();
+            modifiedSentence = stringBuilder.toString();
             modifiedSentence = modifiedSentence.substring(0,modifiedSentence.length()-1);
             stringBuilder.setLength(0);
 
@@ -64,9 +64,19 @@ class SFTPClient implements Runnable {
             }
 
             //try store information from SEND call
-            if (sentence.equals("SEND")){
+            if (sentence.equals("SEND") && filename != ""){
+                //https://stackoverflow.com/questions/9520911/java-sending-and-receiving-file-byte-over-sockets
                 File file = new File(currentDir + "/SEND/" + filename);
+                // Get the size of the file
+                byte[] bytes = new byte[fileSize];
                 file.createNewFile();
+                OutputStream out = clientSocket.getOutputStream();
+                InputStream in = new FileInputStream(file);
+
+                int count;
+                while ((count = in.read(bytes)) > 0) {
+                    out.write(bytes, 0, count);
+                }
             }
 
             //give user information
