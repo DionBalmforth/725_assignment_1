@@ -12,34 +12,32 @@ class SFTPServer implements Runnable {
     private boolean passwordAccepted = false;
     private boolean accountAccepted = false;
     private String typeMode;
+    private String currentDir = System.getProperty("user.dir");
 
     private void SFTPServer() throws Exception
     {
         String clientMessage;
-        String returningMessage;
+        String returningMessage = "";
 
         ServerSocket welcomeSocket = new ServerSocket(port);
         Socket connectionSocket = welcomeSocket.accept();
 
-        BufferedReader inFromClient =
-                new BufferedReader(new
-                        InputStreamReader(connectionSocket.getInputStream()));
-
-        DataOutputStream  outToClient =
-                new DataOutputStream(connectionSocket.getOutputStream());
+        BufferedReader inFromClient = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+        PrintWriter outToClient = new PrintWriter(connectionSocket.getOutputStream(), true);
+        OutputStream outputStream = connectionSocket.getOutputStream();
 
         if (serverOn){
-            outToClient.writeBytes(buildMessage("+UOA-725 SFTP Service"));
+            outToClient.println(buildMessage("+UOA-725 SFTP Service"));
         }
         else{
-            outToClient.writeBytes(buildMessage("-UOA-725 ice-cream machine broke"));
+            outToClient.println(buildMessage("-UOA-725 ice-cream machine broke"));
             return;
         }
 
         while(serverOn) {
             clientMessage = inFromClient.readLine();
+            clientMessage = clientMessage.substring(0, clientMessage.length()-1);
             String[] messageSplit = clientMessage.split(" ");
-            returningMessage = clientMessage.toUpperCase() + '\n';
             switch(messageSplit[0])
             {
                 case "USER":
@@ -54,11 +52,14 @@ class SFTPServer implements Runnable {
                 case "TYPE":
                     returningMessage = TYPE(messageSplit[1]);
                     break;
+                case "LIST":
+                    returningMessage = LIST(messageSplit);
+                    break;
                 default:
                     System.out.println("unrecognised command");
             }
-
-            outToClient.writeBytes(returningMessage);
+            //System.out.println(returningMessage);
+            outToClient.println(returningMessage);
         }
     }
 
@@ -143,11 +144,44 @@ class SFTPServer implements Runnable {
             }
         }
         else{
-            return buildMessage("- user not logged in");
+            return buildMessage("-user not logged in");
         }
     }
 
     //LIST command
+    private String LIST(String[] list){
+        if (!loggedInCheck()){
+            return buildMessage("-user not logged in");
+        }
+        String output = "";
+        // check if path is ok
+        if (list.length == 3){
+            output = checkPath(list[2]);
+            if (output != ""){
+                return buildMessage(output);
+            }
+        }
+
+        //return the files in path
+        File test = new File(currentDir);
+
+        File[] files = test.listFiles();
+        output = "+" + currentDir + "\r\n";
+        for (File file: files){
+            output = output + file.getName();
+
+            if (list[1].equals("V")){
+                output = output + "\tsize<" + file.length() + ">";
+                output = output + "\tDirectory<" + String.valueOf(file.isDirectory()) + ">";
+            }
+            else if (!list[1].equals("F")){
+                return buildMessage("-Invalid Format");
+            }
+            output = output + "\r\n";
+        }
+
+        return buildMessage(output);
+    }
 
     //CDIR command
 
@@ -161,8 +195,25 @@ class SFTPServer implements Runnable {
 
     //STOR command
 
+    private String checkPath(String newPath){
+        try {
+            File test = new File(newPath);
+            String output = "";
+
+            File[] files = test.listFiles();
+            for (File file: files){
+                output = output + file + "\r\n";
+            }
+        } catch (Exception e) {
+            return "-" + e.toString();
+        }
+
+        return "";
+    }
+
     private String buildMessage(String message){
-        return message + '\n';
+        String hold = message + "\0";
+        return hold;
     }
 
     private boolean loggedInCheck(){

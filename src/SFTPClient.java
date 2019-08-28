@@ -11,11 +11,13 @@ class SFTPClient implements Runnable {
 
         String sentence;
         String modifiedSentence;
+        int letter;
+        StringBuilder sb = new StringBuilder();
 
         Socket clientSocket = new Socket(socketName, port);
         clientSocket.setReuseAddress(true);
 
-        DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
+        PrintWriter outToServer = new PrintWriter(clientSocket.getOutputStream(), true);
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
@@ -28,9 +30,19 @@ class SFTPClient implements Runnable {
         while(true){
             sentence = inFromUser.readLine();
 
-            outToServer.writeBytes(sentence + '\n');
+            outToServer.println(sentence + '\0');
 
-            modifiedSentence = inFromServer.readLine();
+            // Get the reply from the server
+            while (true) {
+                letter = inFromServer.read();
+                sb.append((char) letter);
+                if (letter == 0) {
+                    inFromServer.readLine();
+                    break;
+                }
+            }
+            modifiedSentence = sb.toString();
+            sb.setLength(0);
 
             System.out.println("FROM SERVER: " + modifiedSentence);
         }
