@@ -14,6 +14,7 @@ class SFTPServer implements Runnable {
     private String typeMode;
     private String currentDir = System.getProperty("user.dir");
     private String checkDir = "";
+    private String oldFilename = "";
 
     private void SFTPServer() throws Exception
     {
@@ -63,11 +64,17 @@ class SFTPServer implements Runnable {
                 case "KILL":
                     returningMessage = KILL(messageSplit[1]);
                     break;
+                case "NAME":
+                    returningMessage = NAME(messageSplit[1]);
+                    break;
+                case "TOBE":
+                    returningMessage = TOBE(messageSplit[1]);
+                    break;
                 case "DONE":
                     returningMessage = DONE();
                     break;
                 default:
-                    System.out.println("unrecognised command");
+                    returningMessage = buildMessage("unrecognised command");
             }
             //System.out.println(returningMessage);
             outToClient.println(returningMessage);
@@ -176,12 +183,16 @@ class SFTPServer implements Runnable {
                 return buildMessage(output);
             }
         }
+        else{
+            checkDir = currentDir;
+        }
 
         //return the files in path
         File test = new File(checkDir);
 
         File[] files = test.listFiles();
         output = "+" + checkDir + "\r\n";
+        System.out.println(checkDir);
         for (File file: files){
             output = output + file.getName();
 
@@ -194,7 +205,6 @@ class SFTPServer implements Runnable {
             }
             output = output + "\r\n";
         }
-
         return buildMessage(output);
     }
 
@@ -236,6 +246,51 @@ class SFTPServer implements Runnable {
     }
 
     //NAME command
+    private String NAME(String filename){
+        if (!loggedInCheck()){
+            return buildMessage("-user not logged in");
+        }
+
+        try{
+            File file = new File(currentDir + "/" + filename);
+            if(file.exists()){
+                oldFilename = filename;
+                return buildMessage("+File exists");
+            }
+            else{
+                return buildMessage("-Can't find " + filename);
+            }
+        }
+        catch (Exception e){
+            return buildMessage("-Can't find " + filename);
+        }
+    }
+
+    //TOBE
+    private String TOBE(String newFilename){
+        if (!loggedInCheck()){
+            return buildMessage("-user not logged in");
+        }
+
+        if (oldFilename == ""){
+            return buildMessage("-File wasn't renamed because NAME not called");
+        }
+
+        try{
+            File file = new File(currentDir + "/" + oldFilename);
+            if(file.exists()){
+                File newFile = new File(currentDir + "/" + newFilename);
+                file.renameTo(newFile);
+                return buildMessage("+" + oldFilename + " renamed to " + newFilename);
+            }
+            else{
+                return buildMessage("-File wasn't renamed because not in current Directory");
+            }
+        }
+        catch (Exception e){
+            return buildMessage("-File wasn't renamed because" + e.toString());
+        }
+    }
 
     //DONE command
     private String DONE(){
